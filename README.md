@@ -10,7 +10,7 @@ This project extracts today's data from Oracle WMS APIs and loads them into loca
 ```json
 {
     "wms": {
-      "base_url": "https://k1.wms.ocs.oraclecloud.com:443/arcoed/wms/lgfapi/v10",
+      "base_url": "your_url",
       "username": "your_username",
       "password": "your_password",
       "verify_ssl": true,
@@ -20,9 +20,9 @@ This project extracts today's data from Oracle WMS APIs and loads them into loca
       "default_backoff_base": 0.5
     },
     "database": {
-      "host": "localhost",
-      "port": 5432,
-      "user": "postgres",
+      "host": "your_host",
+      "port": your_port,
+      "user": "your_user",
       "password": "your_password",
       "database": "dw_inventory_sae"
     }
