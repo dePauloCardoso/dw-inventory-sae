@@ -21,7 +21,7 @@ This project extracts today's data from Oracle WMS APIs and loads them into loca
     },
     "database": {
       "host": "your_host",
-      "port": your_port,
+      "port": "your_port",
       "user": "your_user",
       "password": "your_password",
       "database": "dw_inventory_sae"
