@@ -8,7 +8,7 @@ from config import get_today_range
 
 def _flatten_container_record(container: Dict[str, Any]) -> Dict[str, Any]:
     flat = flatten_one_level(container)
-    
+
     # Convert numeric fields
     for num_field in ["weight", "volume", "length", "width", "height"]:
         if flat.get(num_field):
@@ -16,44 +16,62 @@ def _flatten_container_record(container: Dict[str, Any]) -> Dict[str, Any]:
                 flat[num_field] = float(flat[num_field])
             except (TypeError, ValueError):
                 flat[num_field] = None
-    
+
     # Convert integer fields
-    for int_field in ["status_id", "vas_status_id", "curr_location_id", "prev_location_id", 
-                      "pallet_id", "lpn_type_id", "cart_posn_nbr", "audit_status_id", 
-                      "qc_status_id", "asset_id", "nbr_files"]:
+    for int_field in [
+        "status_id",
+        "vas_status_id",
+        "curr_location_id",
+        "prev_location_id",
+        "pallet_id",
+        "lpn_type_id",
+        "cart_posn_nbr",
+        "audit_status_id",
+        "qc_status_id",
+        "asset_id",
+        "nbr_files",
+    ]:
         if flat.get(int_field):
             try:
                 flat[int_field] = int(flat[int_field])
             except (TypeError, ValueError):
                 flat[int_field] = None
-    
+
     # Convert boolean fields
     for bool_field in ["parcel_batch_flg", "price_labels_printed", "actual_weight_flg"]:
         if flat.get(bool_field) is not None:
             flat[bool_field] = bool(flat[bool_field])
-    
+
     # Convert timestamp fields
     for ts_field in ["create_ts", "mod_ts", "rcvd_ts", "first_putaway_ts"]:
         if flat.get(ts_field):
             try:
                 from datetime import datetime
+
                 if isinstance(flat[ts_field], str):
-                    flat[ts_field] = datetime.fromisoformat(flat[ts_field].replace('Z', '+00:00'))
+                    flat[ts_field] = datetime.fromisoformat(
+                        flat[ts_field].replace("Z", "+00:00")
+                    )
             except (ValueError, TypeError):
                 flat[ts_field] = None
-    
+
     # Convert date fields
     if flat.get("priority_date"):
         try:
             from datetime import datetime
+
             if isinstance(flat["priority_date"], str):
-                if 'T' in flat["priority_date"]:
-                    flat["priority_date"] = datetime.fromisoformat(flat["priority_date"].replace('Z', '+00:00')).date()
+                if "T" in flat["priority_date"]:
+                    flat["priority_date"] = datetime.fromisoformat(
+                        flat["priority_date"].replace("Z", "+00:00")
+                    ).date()
                 else:
-                    flat["priority_date"] = datetime.strptime(flat["priority_date"], '%Y-%m-%d').date()
+                    flat["priority_date"] = datetime.strptime(
+                        flat["priority_date"], "%Y-%m-%d"
+                    ).date()
         except (ValueError, TypeError):
             flat["priority_date"] = None
-    
+
     return flat
 
 

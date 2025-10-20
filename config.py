@@ -16,16 +16,16 @@ class DateRange:
 def load_config() -> Dict[str, Any]:
     """Load configuration from config.json file"""
     config_path = os.path.join(os.path.dirname(__file__), "config.json")
-    
+
     if not os.path.exists(config_path):
         raise FileNotFoundError(
             f"Configuration file not found: {config_path}\n"
             "Please create a config.json file with the required settings."
         )
-    
-    with open(config_path, 'r', encoding='utf-8') as f:
+
+    with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
-    
+
     return config
 
 
@@ -41,10 +41,10 @@ def get_wms_config() -> Dict[str, Any]:
     """Get WMS configuration from config.json"""
     config = load_config()
     wms_config = config.get("wms", {})
-    
+
     if not wms_config:
         raise RuntimeError("WMS configuration not found in config.json")
-    
+
     return wms_config
 
 
@@ -52,10 +52,8 @@ def get_database_config() -> Dict[str, Any]:
     """Get database configuration from config.json"""
     config = load_config()
     db_config = config.get("database", {})
-    
+
     if not db_config:
         raise RuntimeError("Database configuration not found in config.json")
-    
+
     return db_config
-
-

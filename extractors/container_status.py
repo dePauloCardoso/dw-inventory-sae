@@ -10,5 +10,3 @@ def extract_and_upsert_container_status(client: WMSClient, conn) -> int:
     """Extract all container status data and upsert to database (lookup table - no date filter needed)"""
     items: List[Dict[str, Any]] = client.fetch_all("container_status")
     return upsert_container_status(conn, items)
-
-

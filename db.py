@@ -15,7 +15,7 @@ class DatabaseSettings(BaseModel):
     pg_user: str
     pg_password: str
     pg_database: str
-    
+
     def __init__(self, **data):
         # Load from config.json if not provided
         if not data:
@@ -27,9 +27,9 @@ class DatabaseSettings(BaseModel):
                 "pg_password": db_config.get("password"),
                 "pg_database": db_config.get("database"),
             }
-        
+
         super().__init__(**data)
-        
+
         # Validate that all required fields are set
         required_vars = ["pg_host", "pg_port", "pg_user", "pg_password", "pg_database"]
         missing_vars = [var for var in required_vars if not getattr(self, var)]
@@ -38,10 +38,10 @@ class DatabaseSettings(BaseModel):
                 f"Missing required database configuration: {', '.join(missing_vars)}\n"
                 "Please check your config.json file and ensure all database settings are present."
             )
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
@@ -58,8 +58,6 @@ def get_connection(settings: Optional[DatabaseSettings] = None) -> psycopg.Conne
         row_factory=dict_row,
     )
     return conn
-
-
 
 
 def upsert_inventory(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -> int:
@@ -265,7 +263,9 @@ def upsert_container(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
     return len(items)
 
 
-def upsert_container_status(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -> int:
+def upsert_container_status(
+    conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]
+) -> int:
     items: List[Dict[str, Any]] = list(rows)
     if not items:
         return 0
@@ -431,8 +431,12 @@ def upsert_order_hdr(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
                     "route_nbr": item.get("route_nbr"),
                     "external_route": item.get("external_route"),
                     "destination_company_id_id": item.get("destination_company_id.id"),
-                    "destination_company_id_key": item.get("destination_company_id.key"),
-                    "destination_company_id_url": item.get("destination_company_id.url"),
+                    "destination_company_id_key": item.get(
+                        "destination_company_id.key"
+                    ),
+                    "destination_company_id_url": item.get(
+                        "destination_company_id.url"
+                    ),
                     "ship_via_id": item.get("ship_via_id"),
                     "priority": item.get("priority"),
                     "host_allocation_nbr": item.get("host_allocation_nbr"),
@@ -459,13 +463,19 @@ def upsert_order_hdr(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
                     "sched_ship_date": item.get("sched_ship_date"),
                     "customer_po_type": item.get("customer_po_type"),
                     "customer_vendor_code": item.get("customer_vendor_code"),
-                    "externally_planned_load_flg": item.get("externally_planned_load_flg"),
+                    "externally_planned_load_flg": item.get(
+                        "externally_planned_load_flg"
+                    ),
                     "work_order_kit_id": item.get("work_order_kit_id"),
                     "order_nbr_to_replace": item.get("order_nbr_to_replace"),
                     "stop_ship_flg": item.get("stop_ship_flg"),
                     "lpn_type_class": item.get("lpn_type_class"),
-                    "billto_carrier_account_nbr": item.get("billto_carrier_account_nbr"),
-                    "duties_carrier_account_nbr": item.get("duties_carrier_account_nbr"),
+                    "billto_carrier_account_nbr": item.get(
+                        "billto_carrier_account_nbr"
+                    ),
+                    "duties_carrier_account_nbr": item.get(
+                        "duties_carrier_account_nbr"
+                    ),
                     "duties_payment_method_id": item.get("duties_payment_method_id"),
                     "customs_broker_contact_id": item.get("customs_broker_contact_id"),
                     "order_shipped_ts": item.get("order_shipped_ts"),
@@ -505,7 +515,9 @@ def upsert_order_hdr(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
                     "cust_long_text_2": item.get("cust_long_text_2"),
                     "cust_long_text_3": item.get("cust_long_text_3"),
                     "order_instructions_set": item.get("order_instructions_set"),
-                    "order_dtl_set_result_count": item.get("order_dtl_set_result_count"),
+                    "order_dtl_set_result_count": item.get(
+                        "order_dtl_set_result_count"
+                    ),
                     "order_dtl_set_url": item.get("order_dtl_set_url"),
                     "order_lock_set": item.get("order_lock_set"),
                     "tms_parcel_shipment_nbr": item.get("tms_parcel_shipment_nbr"),
@@ -632,7 +644,9 @@ def upsert_order_dtl(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
                     "voucher_print_count": item.get("voucher_print_count"),
                     "ship_request_line": item.get("ship_request_line"),
                     "unit_declared_value": item.get("unit_declared_value"),
-                    "externally_planned_load_nbr": item.get("externally_planned_load_nbr"),
+                    "externally_planned_load_nbr": item.get(
+                        "externally_planned_load_nbr"
+                    ),
                     "invn_attr_id_id": item.get("invn_attr_id.id"),
                     "invn_attr_id_key": item.get("invn_attr_id.key"),
                     "invn_attr_id_url": item.get("invn_attr_id.url"),
@@ -677,10 +691,16 @@ def upsert_order_dtl(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
                     "erp_source_line_ref": item.get("erp_source_line_ref"),
                     "erp_source_shipment_ref": item.get("erp_source_shipment_ref"),
                     "erp_fulfillment_line_ref": item.get("erp_fulfillment_line_ref"),
-                    "min_shipping_tolerance_percentage": item.get("min_shipping_tolerance_percentage"),
-                    "max_shipping_tolerance_percentage": item.get("max_shipping_tolerance_percentage"),
+                    "min_shipping_tolerance_percentage": item.get(
+                        "min_shipping_tolerance_percentage"
+                    ),
+                    "max_shipping_tolerance_percentage": item.get(
+                        "max_shipping_tolerance_percentage"
+                    ),
                     "status_id": item.get("status_id"),
-                    "order_dtl_original_seq_nbr": item.get("order_dtl_original_seq_nbr"),
+                    "order_dtl_original_seq_nbr": item.get(
+                        "order_dtl_original_seq_nbr"
+                    ),
                     "uom_id_id": item.get("uom_id.id"),
                     "uom_id_key": item.get("uom_id.key"),
                     "uom_id_url": item.get("uom_id.url"),
@@ -690,7 +710,9 @@ def upsert_order_dtl(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
                     "ordered_uom_qty": item.get("ordered_uom_qty"),
                     "required_serial_nbr_set": item.get("required_serial_nbr_set"),
                     "ob_lpn_type_id": item.get("ob_lpn_type_id"),
-                    "planned_parcel_shipment_nbr": item.get("planned_parcel_shipment_nbr"),
+                    "planned_parcel_shipment_nbr": item.get(
+                        "planned_parcel_shipment_nbr"
+                    ),
                     "orig_order_ref_id": item.get("orig_order_ref_id"),
                 }
                 for item in items
@@ -700,7 +722,9 @@ def upsert_order_dtl(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -
     return len(items)
 
 
-def upsert_order_status(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -> int:
+def upsert_order_status(
+    conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]
+) -> int:
     items: List[Dict[str, Any]] = list(rows)
     if not items:
         return 0
@@ -724,5 +748,3 @@ def upsert_order_status(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]
         )
     conn.commit()
     return len(items)
-
-

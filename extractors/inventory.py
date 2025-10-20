@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from wms_client import WMSClient
-from utils import flatten_one_level, to_scalar
+from utils import flatten_one_level
 from db import upsert_inventory
 from config import get_today_range
 
@@ -15,31 +15,39 @@ def _flatten_inventory_record(inv: Dict[str, Any]) -> Dict[str, Any]:
             flat[qty_field] = float(qty_val) if qty_val is not None else 0
         except (TypeError, ValueError):
             flat[qty_field] = 0
-    
+
     # Convert date fields
     for date_field in ["priority_date", "manufacture_date", "expiry_date"]:
         if flat.get(date_field):
             try:
                 from datetime import datetime
+
                 if isinstance(flat[date_field], str):
                     # Handle ISO date format
-                    if 'T' in flat[date_field]:
-                        flat[date_field] = datetime.fromisoformat(flat[date_field].replace('Z', '+00:00')).date()
+                    if "T" in flat[date_field]:
+                        flat[date_field] = datetime.fromisoformat(
+                            flat[date_field].replace("Z", "+00:00")
+                        ).date()
                     else:
-                        flat[date_field] = datetime.strptime(flat[date_field], '%Y-%m-%d').date()
+                        flat[date_field] = datetime.strptime(
+                            flat[date_field], "%Y-%m-%d"
+                        ).date()
             except (ValueError, TypeError):
                 flat[date_field] = None
-    
+
     # Convert timestamp fields
     for ts_field in ["create_ts", "mod_ts"]:
         if flat.get(ts_field):
             try:
                 from datetime import datetime
+
                 if isinstance(flat[ts_field], str):
-                    flat[ts_field] = datetime.fromisoformat(flat[ts_field].replace('Z', '+00:00'))
+                    flat[ts_field] = datetime.fromisoformat(
+                        flat[ts_field].replace("Z", "+00:00")
+                    )
             except (ValueError, TypeError):
                 flat[ts_field] = None
-    
+
     return flat
 
 

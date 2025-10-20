@@ -178,7 +178,7 @@ create table if not exists public.raw_order_dtl (
     order_id_url        text,
 
     seq_nbr             integer,
-    
+
     -- nested: item_id
     item_id_id          bigint,
     item_id_key         text,
@@ -210,7 +210,7 @@ create table if not exists public.raw_order_dtl (
     ship_request_line   text,
     unit_declared_value numeric,
     externally_planned_load_nbr text,
-    
+
     -- nested: invn_attr_id
     invn_attr_id_id     bigint,
     invn_attr_id_key    text,
@@ -261,17 +261,17 @@ create table if not exists public.raw_order_dtl (
     max_shipping_tolerance_percentage numeric,
     status_id           integer,
     order_dtl_original_seq_nbr text,
-    
+
     -- nested: uom_id
     uom_id_id           bigint,
     uom_id_key          text,
     uom_id_url          text,
-    
+
     -- nested: ordered_uom_id
     ordered_uom_id_id   bigint,
     ordered_uom_id_key  text,
     ordered_uom_id_url  text,
-    
+
     ordered_uom_qty     numeric,
     required_serial_nbr_set text,
     ob_lpn_type_id      bigint,
@@ -306,7 +306,7 @@ create table if not exists public.raw_order_hdr (
     company_id_url      text,
 
     order_nbr           text,
-    
+
     -- nested: order_type_id
     order_type_id_id    bigint,
     order_type_id_key   text,
@@ -349,7 +349,7 @@ create table if not exists public.raw_order_hdr (
     ship_via_ref_code   text,
     route_nbr           text,
     external_route      text,
-    
+
     -- nested: destination_company_id
     destination_company_id_id    bigint,
     destination_company_id_key   text,
@@ -429,11 +429,11 @@ create table if not exists public.raw_order_hdr (
     cust_long_text_2    text,
     cust_long_text_3    text,
     order_instructions_set text,
-    
+
     -- nested: order_dtl_set
     order_dtl_set_result_count integer,
     order_dtl_set_url   text,
-    
+
     order_lock_set      text,
     tms_parcel_shipment_nbr text,
     erp_source_hdr_ref  text,
@@ -452,5 +452,3 @@ create table if not exists public.raw_order_status (
     id                  integer primary key,
     description         text not null
 );
-
-
