@@ -748,3 +748,236 @@ def upsert_order_status(
         )
     conn.commit()
     return len(items)
+
+
+def upsert_location(conn: psycopg.Connection, rows: Iterable[Dict[str, Any]]) -> int:
+    items: List[Dict[str, Any]] = list(rows)
+    if not items:
+        return 0
+    with conn.cursor() as cur:
+        cur.executemany(
+            """
+            insert into public.raw_location (
+                id, url, create_user, create_ts, mod_user, mod_ts,
+                facility_id_id, facility_id_key, facility_id_url,
+                dedicated_company_id_id, dedicated_company_id_key, dedicated_company_id_url,
+                area, aisle, bay, level, position, bin,
+                type_id_id, type_id_key, type_id_url,
+                allow_multi_sku, barcode, destination_company_id_id,
+                length, width, height, max_units, max_lpns, to_be_counted_flg, to_be_counted_ts,
+                lock_code_id, lock_for_putaway_flg, pick_seq, last_count_ts, last_count_user,
+                locn_size_type_id, min_units, allow_reserve_partial_pick_flg, alloc_zone, locn_str, putaway_seq,
+                replenishment_zone_id_id, replenishment_zone_id_key, replenishment_zone_id_url,
+                min_volume, max_volume, restrict_batch_nbr_flg, item_assignment_type_id_id, item_assignment_type_id_key, item_assignment_type_id_url,
+                item_id_id, item_id_key, item_id_url, mhe_system_id, pick_zone, divert_lane, task_zone_id,
+                in_transit_units, restrict_invn_attr_flg, assembly_flg, billing_location_type,
+                cust_field_1, cust_field_2, cust_field_3, cust_field_4, cust_field_5,
+                min_weight, max_weight, cc_threshold_uom_id_id, cc_threshold_uom_id_key, cc_threshold_uom_id_url,
+                cc_threshold_value, x_coordinate, y_coordinate, z_coordinate, lock_applied_ts,
+                ignore_attr_values_for_restrict_invn_attr, ranking
+            ) values (
+                %(id)s, %(url)s, %(create_user)s, %(create_ts)s, %(mod_user)s, %(mod_ts)s,
+                %(facility_id_id)s, %(facility_id_key)s, %(facility_id_url)s,
+                %(dedicated_company_id_id)s, %(dedicated_company_id_key)s, %(dedicated_company_id_url)s,
+                %(area)s, %(aisle)s, %(bay)s, %(level)s, %(position)s, %(bin)s,
+                %(type_id_id)s, %(type_id_key)s, %(type_id_url)s,
+                %(allow_multi_sku)s, %(barcode)s, %(destination_company_id_id)s,
+                %(length)s, %(width)s, %(height)s, %(max_units)s, %(max_lpns)s, %(to_be_counted_flg)s, %(to_be_counted_ts)s,
+                %(lock_code_id)s, %(lock_for_putaway_flg)s, %(pick_seq)s, %(last_count_ts)s, %(last_count_user)s,
+                %(locn_size_type_id)s, %(min_units)s, %(allow_reserve_partial_pick_flg)s, %(alloc_zone)s, %(locn_str)s, %(putaway_seq)s,
+                %(replenishment_zone_id_id)s, %(replenishment_zone_id_key)s, %(replenishment_zone_id_url)s,
+                %(min_volume)s, %(max_volume)s, %(restrict_batch_nbr_flg)s, %(item_assignment_type_id_id)s, %(item_assignment_type_id_key)s, %(item_assignment_type_id_url)s,
+                %(item_id_id)s, %(item_id_key)s, %(item_id_url)s, %(mhe_system_id)s, %(pick_zone)s, %(divert_lane)s, %(task_zone_id)s,
+                %(in_transit_units)s, %(restrict_invn_attr_flg)s, %(assembly_flg)s, %(billing_location_type)s,
+                %(cust_field_1)s, %(cust_field_2)s, %(cust_field_3)s, %(cust_field_4)s, %(cust_field_5)s,
+                %(min_weight)s, %(max_weight)s, %(cc_threshold_uom_id_id)s, %(cc_threshold_uom_id_key)s, %(cc_threshold_uom_id_url)s,
+                %(cc_threshold_value)s, %(x_coordinate)s, %(y_coordinate)s, %(z_coordinate)s, %(lock_applied_ts)s,
+                %(ignore_attr_values_for_restrict_invn_attr)s, %(ranking)s
+            ) on conflict (id) do update set
+                url = excluded.url, mod_user = excluded.mod_user, mod_ts = excluded.mod_ts,
+                facility_id_id = excluded.facility_id_id, facility_id_key = excluded.facility_id_key, facility_id_url = excluded.facility_id_url,
+                dedicated_company_id_id = excluded.dedicated_company_id_id, dedicated_company_id_key = excluded.dedicated_company_id_key, dedicated_company_id_url = excluded.dedicated_company_id_url,
+                area = excluded.area, aisle = excluded.aisle, bay = excluded.bay, level = excluded.level, position = excluded.position, bin = excluded.bin,
+                type_id_id = excluded.type_id_id, type_id_key = excluded.type_id_key, type_id_url = excluded.type_id_url,
+                allow_multi_sku = excluded.allow_multi_sku, barcode = excluded.barcode, destination_company_id_id = excluded.destination_company_id_id,
+                length = excluded.length, width = excluded.width, height = excluded.height, max_units = excluded.max_units, max_lpns = excluded.max_lpns, to_be_counted_flg = excluded.to_be_counted_flg, to_be_counted_ts = excluded.to_be_counted_ts,
+                lock_code_id = excluded.lock_code_id, lock_for_putaway_flg = excluded.lock_for_putaway_flg, pick_seq = excluded.pick_seq, last_count_ts = excluded.last_count_ts, last_count_user = excluded.last_count_user,
+                locn_size_type_id = excluded.locn_size_type_id, min_units = excluded.min_units, allow_reserve_partial_pick_flg = excluded.allow_reserve_partial_pick_flg, alloc_zone = excluded.alloc_zone, locn_str = excluded.locn_str, putaway_seq = excluded.putaway_seq,
+                replenishment_zone_id_id = excluded.replenishment_zone_id_id, replenishment_zone_id_key = excluded.replenishment_zone_id_key, replenishment_zone_id_url = excluded.replenishment_zone_id_url,
+                min_volume = excluded.min_volume, max_volume = excluded.max_volume, restrict_batch_nbr_flg = excluded.restrict_batch_nbr_flg, item_assignment_type_id_id = excluded.item_assignment_type_id_id, item_assignment_type_id_key = excluded.item_assignment_type_id_key, item_assignment_type_id_url = excluded.item_assignment_type_id_url,
+                item_id_id = excluded.item_id_id, item_id_key = excluded.item_id_key, item_id_url = excluded.item_id_url, mhe_system_id = excluded.mhe_system_id, pick_zone = excluded.pick_zone, divert_lane = excluded.divert_lane, task_zone_id = excluded.task_zone_id,
+                in_transit_units = excluded.in_transit_units, restrict_invn_attr_flg = excluded.restrict_invn_attr_flg, assembly_flg = excluded.assembly_flg, billing_location_type = excluded.billing_location_type,
+                cust_field_1 = excluded.cust_field_1, cust_field_2 = excluded.cust_field_2, cust_field_3 = excluded.cust_field_3, cust_field_4 = excluded.cust_field_4, cust_field_5 = excluded.cust_field_5,
+                min_weight = excluded.min_weight, max_weight = excluded.max_weight, cc_threshold_uom_id_id = excluded.cc_threshold_uom_id_id, cc_threshold_uom_id_key = excluded.cc_threshold_uom_id_key, cc_threshold_uom_id_url = excluded.cc_threshold_uom_id_url,
+                cc_threshold_value = excluded.cc_threshold_value, x_coordinate = excluded.x_coordinate, y_coordinate = excluded.y_coordinate, z_coordinate = excluded.z_coordinate, lock_applied_ts = excluded.lock_applied_ts,
+                ignore_attr_values_for_restrict_invn_attr = excluded.ignore_attr_values_for_restrict_invn_attr, ranking = excluded.ranking
+            """,
+            [
+                {
+                    "id": item.get("id"),
+                    "url": item.get("url"),
+                    "create_user": item.get("create_user"),
+                    "create_ts": item.get("create_ts"),
+                    "mod_user": item.get("mod_user"),
+                    "mod_ts": item.get("mod_ts"),
+                    "facility_id_id": item.get("facility_id.id"),
+                    "facility_id_key": item.get("facility_id.key"),
+                    "facility_id_url": item.get("facility_id.url"),
+                    "dedicated_company_id_id": item.get("dedicated_company_id.id"),
+                    "dedicated_company_id_key": item.get("dedicated_company_id.key"),
+                    "dedicated_company_id_url": item.get("dedicated_company_id.url"),
+                    "area": item.get("area") if item.get("area") else None,
+                    "aisle": item.get("aisle") if item.get("aisle") else None,
+                    "bay": item.get("bay") if item.get("bay") else None,
+                    "level": item.get("level") if item.get("level") else None,
+                    "position": item.get("position") if item.get("position") else None,
+                    "bin": item.get("bin") if item.get("bin") else None,
+                    "type_id_id": item.get("type_id.id"),
+                    "type_id_key": item.get("type_id.key"),
+                    "type_id_url": item.get("type_id.url"),
+                    "allow_multi_sku": item.get("allow_multi_sku")
+                    if item.get("allow_multi_sku") is not None
+                    else None,
+                    "barcode": item.get("barcode") if item.get("barcode") else None,
+                    "destination_company_id_id": item.get("destination_company_id.id")
+                    if item.get("destination_company_id")
+                    else None,
+                    "length": item.get("length"),
+                    "width": item.get("width"),
+                    "height": item.get("height"),
+                    "max_units": item.get("max_units")
+                    if item.get("max_units")
+                    else None,
+                    "max_lpns": item.get("max_lpns") if item.get("max_lpns") else None,
+                    "to_be_counted_flg": item.get("to_be_counted_flg")
+                    if item.get("to_be_counted_flg") is not None
+                    else None,
+                    "to_be_counted_ts": item.get("to_be_counted_ts")
+                    if item.get("to_be_counted_ts")
+                    else None,
+                    "lock_code_id": item.get("lock_code_id")
+                    if item.get("lock_code_id")
+                    else None,
+                    "lock_for_putaway_flg": item.get("lock_for_putaway_flg")
+                    if item.get("lock_for_putaway_flg") is not None
+                    else None,
+                    "pick_seq": item.get("pick_seq") if item.get("pick_seq") else None,
+                    "last_count_ts": item.get("last_count_ts")
+                    if item.get("last_count_ts")
+                    else None,
+                    "last_count_user": item.get("last_count_user")
+                    if item.get("last_count_user")
+                    else None,
+                    "locn_size_type_id": item.get("locn_size_type_id")
+                    if item.get("locn_size_type_id")
+                    else None,
+                    "min_units": item.get("min_units")
+                    if item.get("min_units")
+                    else None,
+                    "allow_reserve_partial_pick_flg": item.get(
+                        "allow_reserve_partial_pick_flg"
+                    )
+                    if item.get("allow_reserve_partial_pick_flg") is not None
+                    else None,
+                    "alloc_zone": item.get("alloc_zone")
+                    if item.get("alloc_zone")
+                    else None,
+                    "locn_str": item.get("locn_str") if item.get("locn_str") else None,
+                    "putaway_seq": item.get("putaway_seq")
+                    if item.get("putaway_seq")
+                    else None,
+                    "replenishment_zone_id_id": item.get("replenishment_zone_id.id"),
+                    "replenishment_zone_id_key": item.get("replenishment_zone_id.key"),
+                    "replenishment_zone_id_url": item.get("replenishment_zone_id.url"),
+                    "min_volume": item.get("min_volume")
+                    if item.get("min_volume")
+                    else None,
+                    "max_volume": item.get("max_volume")
+                    if item.get("max_volume")
+                    else None,
+                    "restrict_batch_nbr_flg": item.get("restrict_batch_nbr_flg")
+                    if item.get("restrict_batch_nbr_flg") is not None
+                    else None,
+                    "item_assignment_type_id_id": item.get(
+                        "item_assignment_type_id.id"
+                    ),
+                    "item_assignment_type_id_key": item.get(
+                        "item_assignment_type_id.key"
+                    ),
+                    "item_assignment_type_id_url": item.get(
+                        "item_assignment_type_id.url"
+                    ),
+                    "item_id_id": item.get("item_id.id"),
+                    "item_id_key": item.get("item_id.key"),
+                    "item_id_url": item.get("item_id.url"),
+                    "mhe_system_id": item.get("mhe_system_id")
+                    if item.get("mhe_system_id")
+                    else None,
+                    "pick_zone": item.get("pick_zone")
+                    if item.get("pick_zone")
+                    else None,
+                    "divert_lane": item.get("divert_lane")
+                    if item.get("divert_lane")
+                    else None,
+                    "task_zone_id": item.get("task_zone_id")
+                    if item.get("task_zone_id")
+                    else None,
+                    "in_transit_units": item.get("in_transit_units")
+                    if item.get("in_transit_units")
+                    else None,
+                    "restrict_invn_attr_flg": item.get("restrict_invn_attr_flg")
+                    if item.get("restrict_invn_attr_flg") is not None
+                    else None,
+                    "assembly_flg": item.get("assembly_flg")
+                    if item.get("assembly_flg") is not None
+                    else None,
+                    "billing_location_type": item.get("billing_location_type")
+                    if item.get("billing_location_type")
+                    else None,
+                    "cust_field_1": item.get("cust_field_1"),
+                    "cust_field_2": item.get("cust_field_2"),
+                    "cust_field_3": item.get("cust_field_3"),
+                    "cust_field_4": item.get("cust_field_4"),
+                    "cust_field_5": item.get("cust_field_5"),
+                    "min_weight": item.get("min_weight")
+                    if item.get("min_weight")
+                    else None,
+                    "max_weight": item.get("max_weight")
+                    if item.get("max_weight")
+                    else None,
+                    "cc_threshold_uom_id_id": item.get("cc_threshold_uom_id.id")
+                    if item.get("cc_threshold_uom_id")
+                    else None,
+                    "cc_threshold_uom_id_key": item.get("cc_threshold_uom_id.key")
+                    if item.get("cc_threshold_uom_id")
+                    else None,
+                    "cc_threshold_uom_id_url": item.get("cc_threshold_uom_id.url")
+                    if item.get("cc_threshold_uom_id")
+                    else None,
+                    "cc_threshold_value": item.get("cc_threshold_value")
+                    if item.get("cc_threshold_value")
+                    else None,
+                    "x_coordinate": item.get("x_coordinate")
+                    if item.get("x_coordinate")
+                    else None,
+                    "y_coordinate": item.get("y_coordinate")
+                    if item.get("y_coordinate")
+                    else None,
+                    "z_coordinate": item.get("z_coordinate")
+                    if item.get("z_coordinate")
+                    else None,
+                    "lock_applied_ts": item.get("lock_applied_ts")
+                    if item.get("lock_applied_ts")
+                    else None,
+                    "ignore_attr_values_for_restrict_invn_attr": item.get(
+                        "ignore_attr_values_for_restrict_invn_attr"
+                    )
+                    if item.get("ignore_attr_values_for_restrict_invn_attr")
+                    else None,
+                    "ranking": item.get("ranking") if item.get("ranking") else None,
+                }
+                for item in items
+            ],
+        )
+    conn.commit()
+    return len(items)

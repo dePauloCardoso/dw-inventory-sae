@@ -60,7 +60,7 @@ class WMSClient:
     def fetch_all(
         self, entity: str, params: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
-        url = f"{self.base_url}/entity/{entity}/"
+        url = f"{self.base_url}/entity/{entity}"
         items: List[Dict[str, Any]] = []
         page = 1
         while True:

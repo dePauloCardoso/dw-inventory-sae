@@ -28,6 +28,9 @@ create table if not exists public.raw_container (
     status_id           integer,
     vas_status_id       integer,
     curr_location_id    bigint,
+    curr_location_id_id bigint,
+    curr_location_id_key text,
+    curr_location_id_url text,
     prev_location_id    bigint,
     priority_date       timestamp with time zone,
     pallet_id           bigint,
@@ -428,4 +431,122 @@ create table if not exists public.raw_order_status (
     -- core fields
     id                  integer primary key,
     description         text not null
+);
+
+-- Location table
+create table if not exists public.raw_location (
+    -- core identifiers
+    id                  bigint primary key,
+    url                 text,
+
+    -- audit
+    create_user         text,
+    create_ts           timestamp with time zone,
+    mod_user            text,
+    mod_ts              timestamp with time zone,
+
+    -- nested: facility_id
+    facility_id_id      bigint,
+    facility_id_key     text,
+    facility_id_url     text,
+
+    -- nested: dedicated_company_id
+    dedicated_company_id_id     bigint,
+    dedicated_company_id_key     text,
+    dedicated_company_id_url    text,
+
+    -- location attributes
+    area                text,
+    aisle               text,
+    bay                 text,
+    level               text,
+    position             text,
+    bin                 text,
+
+    -- nested: type_id
+    type_id_id          bigint,
+    type_id_key         text,
+    type_id_url         text,
+
+    allow_multi_sku     boolean,
+    barcode             text,
+
+    -- nested: destination_company_id
+    destination_company_id_id    bigint,
+
+    -- dimensions and capacity
+    length              numeric,
+    width               numeric,
+    height              numeric,
+    max_units           numeric,
+    max_lpns            bigint,
+
+    -- counting and locking
+    to_be_counted_flg   boolean,
+    to_be_counted_ts    timestamp with time zone,
+    lock_code_id        bigint,
+    lock_for_putaway_flg boolean,
+    pick_seq            text,
+    last_count_ts       timestamp with time zone,
+    last_count_user     text,
+    locn_size_type_id   bigint,
+    min_units           numeric,
+    allow_reserve_partial_pick_flg boolean,
+    alloc_zone          text,
+    locn_str            text,
+    putaway_seq         text,
+
+    -- nested: replenishment_zone_id
+    replenishment_zone_id_id    bigint,
+    replenishment_zone_id_key    text,
+    replenishment_zone_id_url    text,
+
+    -- volume and weight constraints
+    min_volume           numeric,
+    max_volume           numeric,
+    restrict_batch_nbr_flg boolean,
+
+    -- nested: item_assignment_type_id
+    item_assignment_type_id_id     bigint,
+    item_assignment_type_id_key     text,
+    item_assignment_type_id_url     text,
+
+    -- nested: item_id
+    item_id_id          bigint,
+    item_id_key         text,
+    item_id_url         text,
+
+    mhe_system_id       bigint,
+    pick_zone           text,
+    divert_lane         text,
+    task_zone_id        bigint,
+    in_transit_units    numeric,
+    restrict_invn_attr_flg boolean,
+    assembly_flg        boolean,
+    billing_location_type text,
+
+    -- custom fields
+    cust_field_1        text,
+    cust_field_2        text,
+    cust_field_3        text,
+    cust_field_4        text,
+    cust_field_5        text,
+
+    -- weight constraints
+    min_weight          numeric,
+    max_weight          numeric,
+
+    -- nested: cc_threshold_uom_id
+    cc_threshold_uom_id_id      bigint,
+    cc_threshold_uom_id_key     text,
+    cc_threshold_uom_id_url    text,
+    cc_threshold_value         numeric,
+
+    -- coordinates
+    x_coordinate        numeric,
+    y_coordinate        numeric,
+    z_coordinate        numeric,
+    lock_applied_ts     timestamp with time zone,
+    ignore_attr_values_for_restrict_invn_attr text,
+    ranking             text
 );
