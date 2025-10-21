@@ -2,10 +2,6 @@ create schema if not exists public;
 
 -- Container table
 create table if not exists public.raw_container (
-    -- ingestion metadata
-    _ingested_at        timestamp without time zone default now() not null,
-    _source             varchar default 'wms' not null,
-
     -- core identifiers
     id                  bigint primary key,
     url                 text,
@@ -77,6 +73,7 @@ create table if not exists public.raw_container (
 
     rcvd_trailer_nbr    text,
     orig_container_nbr  text,
+    pallet_position text,
 
     inventory_lock_set  text,
     nbr_files           integer,
@@ -90,10 +87,6 @@ create table if not exists public.raw_container (
 
 -- Inventory table
 create table if not exists public.raw_inventory (
-    -- ingestion metadata
-    _ingested_at        timestamp without time zone default now() not null,
-    _source             varchar default 'wms' not null,
-
     -- core identifiers
     id                  bigint primary key,
     url                 text,
@@ -147,10 +140,6 @@ create table if not exists public.raw_inventory (
 
 -- Container Status table
 create table if not exists public.raw_container_status (
-    -- ingestion metadata
-    _ingested_at        timestamp without time zone default now() not null,
-    _source             varchar default 'wms' not null,
-
     -- core fields
     id                  integer primary key,
     description         text not null
@@ -158,10 +147,6 @@ create table if not exists public.raw_container_status (
 
 -- Order Detail table
 create table if not exists public.raw_order_dtl (
-    -- ingestion metadata
-    _ingested_at        timestamp without time zone default now() not null,
-    _source             varchar default 'wms' not null,
-
     -- core identifiers
     id                  bigint primary key,
     url                 text,
@@ -281,10 +266,6 @@ create table if not exists public.raw_order_dtl (
 
 -- Order Header table
 create table if not exists public.raw_order_hdr (
-    -- ingestion metadata
-    _ingested_at        timestamp without time zone default now() not null,
-    _source             varchar default 'wms' not null,
-
     -- core identifiers
     id                  bigint primary key,
     url                 text,
@@ -444,10 +425,6 @@ create table if not exists public.raw_order_hdr (
 
 -- Order Status table
 create table if not exists public.raw_order_status (
-    -- ingestion metadata
-    _ingested_at        timestamp without time zone default now() not null,
-    _source             varchar default 'wms' not null,
-
     -- core fields
     id                  integer primary key,
     description         text not null

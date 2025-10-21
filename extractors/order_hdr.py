@@ -32,6 +32,7 @@ def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
 
     # Convert integer fields
     for int_field in [
+        "id",
         "status_id",
         "dest_facility_id",
         "shipto_facility_id",
@@ -44,6 +45,10 @@ def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
         "work_order_kit_id",
         "duties_payment_method_id",
         "customs_broker_contact_id",
+        "facility_id.id",
+        "company_id.id",
+        "order_type_id.id",
+        "destination_company_id.id",
     ]:
         if flat.get(int_field):
             try:
@@ -63,9 +68,14 @@ def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
                 from datetime import datetime
 
                 if isinstance(flat[ts_field], str):
-                    flat[ts_field] = datetime.fromisoformat(
-                        flat[ts_field].replace("Z", "+00:00")
-                    )
+                    # Handle timezone offset format like "-03:00"
+                    if flat[ts_field].endswith(("Z", "+00:00")):
+                        flat[ts_field] = datetime.fromisoformat(
+                            flat[ts_field].replace("Z", "+00:00")
+                        )
+                    else:
+                        # Handle timezone offset format like "-03:00"
+                        flat[ts_field] = datetime.fromisoformat(flat[ts_field])
             except (ValueError, TypeError):
                 flat[ts_field] = None
 
@@ -126,6 +136,25 @@ def extract_and_upsert_order_hdr(client: WMSClient, conn) -> int:
         "create_ts__gte": dr.start.strftime("%Y-%m-%dT%H:%M:%S"),
         "create_ts__lt": dr.end.strftime("%Y-%m-%dT%H:%M:%S"),
     }
-    items: List[Dict[str, Any]] = client.fetch_all("order_hdr", params=params)
-    flattened = [_flatten_order_hdr_record(x) for x in items]
-    return upsert_order_hdr(conn, flattened)
+
+    try:
+        items: List[Dict[str, Any]] = client.fetch_all("order_hdr", params=params)
+        flattened = [_flatten_order_hdr_record(x) for x in items]
+        return upsert_order_hdr(conn, flattened)
+    except Exception as e:
+        print(f"Error fetching order_hdr data: {e}")
+        # Try with a broader date range (last 3 days) if today's data is not available
+        from datetime import datetime, timedelta
+
+        print("Trying with last 3 days date range...")
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=3)
+
+        params = {
+            "create_ts__gte": start_date.strftime("%Y-%m-%dT%H:%M:%S"),
+            "create_ts__lt": end_date.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+
+        items: List[Dict[str, Any]] = client.fetch_all("order_hdr", params=params)
+        flattened = [_flatten_order_hdr_record(x) for x in items]
+        return upsert_order_hdr(conn, flattened)

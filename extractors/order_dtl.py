@@ -94,6 +94,25 @@ def extract_and_upsert_order_dtl(client: WMSClient, conn) -> int:
         "create_ts__gte": dr.start.strftime("%Y-%m-%dT%H:%M:%S"),
         "create_ts__lt": dr.end.strftime("%Y-%m-%dT%H:%M:%S"),
     }
-    items: List[Dict[str, Any]] = client.fetch_all("order_dtl", params=params)
-    flattened = [_flatten_order_dtl_record(x) for x in items]
-    return upsert_order_dtl(conn, flattened)
+
+    try:
+        items: List[Dict[str, Any]] = client.fetch_all("order_dtl", params=params)
+        flattened = [_flatten_order_dtl_record(x) for x in items]
+        return upsert_order_dtl(conn, flattened)
+    except Exception as e:
+        print(f"Error fetching order_dtl data: {e}")
+        # Try with a broader date range (last 3 days) if today's data is not available
+        from datetime import datetime, timedelta
+
+        print("Trying with last 3 days date range...")
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=3)
+
+        params = {
+            "create_ts__gte": start_date.strftime("%Y-%m-%dT%H:%M:%S"),
+            "create_ts__lt": end_date.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+
+        items: List[Dict[str, Any]] = client.fetch_all("order_dtl", params=params)
+        flattened = [_flatten_order_dtl_record(x) for x in items]
+        return upsert_order_dtl(conn, flattened)
