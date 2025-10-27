@@ -1,16 +1,75 @@
+# order_hdr.py
+from __future__ import annotations
 from typing import Any, Dict, List
+from datetime import datetime, timedelta
+import logging
 
 from wms_client import WMSClient
-from utils import flatten_one_level
+from utils import flatten_one_level, batched
 from db import upsert_order_hdr
 from config import get_today_range
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_float(v: Any) -> float | None:
+    if v in (None, "", "null"):
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(v: Any) -> int | None:
+    if v in (None, "", "null"):
+        return None
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_bool(v: Any) -> bool | None:
+    if v is None:
+        return None
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):
+        return v.lower() in ("true", "t", "1", "yes", "y")
+    return bool(v)
+
+
+def _parse_date(s: Any) -> datetime.date | None:
+    if not s:
+        return None
+    try:
+        if isinstance(s, str):
+            if "T" in s:
+                return datetime.fromisoformat(s.replace("Z", "+00:00")).date()
+            else:
+                return datetime.strptime(s, "%Y-%m-%d").date()
+    except Exception:
+        return None
+    return None
+
+
+def _parse_datetime(s: Any) -> datetime | None:
+    if not s:
+        return None
+    try:
+        if isinstance(s, str):
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
+    return None
 
 
 def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
     flat = flatten_one_level(order_hdr)
 
-    # Convert numeric fields
-    for num_field in [
+    # Numeric conversions
+    numeric_fields = [
         "total_orig_ord_qty",
         "orig_sale_price",
         "cust_number_1",
@@ -23,16 +82,16 @@ def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
         "cust_decimal_3",
         "cust_decimal_4",
         "cust_decimal_5",
-    ]:
-        if flat.get(num_field):
-            try:
-                flat[num_field] = float(flat[num_field])
-            except (TypeError, ValueError):
-                flat[num_field] = None
+    ]
+    for f in numeric_fields:
+        if f in flat:
+            flat[f] = _safe_float(flat.get(f))
 
-    # Convert integer fields
-    for int_field in [
+    # Integer conversions
+    integer_fields = [
         "id",
+        "facility_id_id",
+        "company_id_id",
         "status_id",
         "dest_facility_id",
         "shipto_facility_id",
@@ -45,42 +104,25 @@ def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
         "work_order_kit_id",
         "duties_payment_method_id",
         "customs_broker_contact_id",
-        "facility_id.id",
-        "company_id.id",
-        "order_type_id.id",
-        "destination_company_id.id",
-    ]:
-        if flat.get(int_field):
-            try:
-                flat[int_field] = int(flat[int_field])
-            except (TypeError, ValueError):
-                flat[int_field] = None
+        "order_type_id_id",
+        "destination_company_id_id",
+    ]
+    for f in integer_fields:
+        if f in flat:
+            flat[f] = _safe_int(flat.get(f))
 
-    # Convert boolean fields
-    for bool_field in ["externally_planned_load_flg", "stop_ship_flg"]:
-        if flat.get(bool_field) is not None:
-            flat[bool_field] = bool(flat[bool_field])
+    # Boolean conversions
+    for f in ["externally_planned_load_flg", "stop_ship_flg"]:
+        if f in flat:
+            flat[f] = _safe_bool(flat.get(f))
 
-    # Convert timestamp fields
-    for ts_field in ["create_ts", "mod_ts", "order_shipped_ts"]:
-        if flat.get(ts_field):
-            try:
-                from datetime import datetime
+    # Timestamp conversions
+    for f in ["create_ts", "mod_ts", "order_shipped_ts"]:
+        if f in flat:
+            flat[f] = _parse_datetime(flat.get(f))
 
-                if isinstance(flat[ts_field], str):
-                    # Handle timezone offset format like "-03:00"
-                    if flat[ts_field].endswith(("Z", "+00:00")):
-                        flat[ts_field] = datetime.fromisoformat(
-                            flat[ts_field].replace("Z", "+00:00")
-                        )
-                    else:
-                        # Handle timezone offset format like "-03:00"
-                        flat[ts_field] = datetime.fromisoformat(flat[ts_field])
-            except (ValueError, TypeError):
-                flat[ts_field] = None
-
-    # Convert date fields
-    for date_field in [
+    # Date conversions
+    date_fields = [
         "ord_date",
         "exp_date",
         "req_ship_date",
@@ -92,45 +134,48 @@ def _flatten_order_hdr_record(order_hdr: Dict[str, Any]) -> Dict[str, Any]:
         "cust_date_3",
         "cust_date_4",
         "cust_date_5",
-    ]:
-        if flat.get(date_field):
-            try:
-                from datetime import datetime
+    ]
+    for f in date_fields:
+        if f in flat:
+            flat[f] = _parse_date(flat.get(f))
 
-                if isinstance(flat[date_field], str):
-                    if "T" in flat[date_field]:
-                        flat[date_field] = datetime.fromisoformat(
-                            flat[date_field].replace("Z", "+00:00")
-                        ).date()
-                    else:
-                        flat[date_field] = datetime.strptime(
-                            flat[date_field], "%Y-%m-%d"
-                        ).date()
-            except (ValueError, TypeError):
-                flat[date_field] = None
+    # Nested references
+    nested_fields = [
+        "facility_id",
+        "company_id",
+        "order_type_id",
+        "destination_company_id",
+    ]
+    for nf in nested_fields:
+        if nf in flat and isinstance(flat[nf], dict):
+            flat[f"{nf}_key"] = flat[nf].get("key")
+            flat[f"{nf}_url"] = flat[nf].get("url")
+            flat.pop(nf, None)
 
-    # Handle order_dtl_set object
+    # Handle order_dtl_set
     if flat.get("order_dtl_set"):
-        order_dtl_set = flat["order_dtl_set"]
-        if isinstance(order_dtl_set, dict):
-            flat["order_dtl_set_result_count"] = order_dtl_set.get("result_count")
-            flat["order_dtl_set_url"] = order_dtl_set.get("url")
-        flat.pop("order_dtl_set", None)
+        ods = flat.pop("order_dtl_set")
+        if isinstance(ods, dict):
+            flat["order_dtl_set_result_count"] = ods.get("result_count")
+            flat["order_dtl_set_url"] = ods.get("url")
 
-    # Convert arrays to text
+    # Convert array fields to string for storage
     for array_field in ["order_instructions_set", "order_lock_set"]:
-        if flat.get(array_field):
-            if isinstance(flat[array_field], list):
-                flat[array_field] = str(flat[array_field])
-            elif flat[array_field] is None:
+        if array_field in flat:
+            v = flat[array_field]
+            if isinstance(v, list):
+                flat[array_field] = str(v)
+            elif v is None:
                 flat[array_field] = None
 
     return flat
 
 
 def extract_and_upsert_order_hdr(client: WMSClient, conn) -> int:
-    """Extract today's order header data and upsert to database"""
-    # Get today's date range
+    """
+    Extract order header records for today's date (or last 3 days if empty),
+    flatten them and upsert into the database.
+    """
     dr = get_today_range()
     params = {
         "create_ts__gte": dr.start.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -138,23 +183,32 @@ def extract_and_upsert_order_hdr(client: WMSClient, conn) -> int:
     }
 
     try:
-        items: List[Dict[str, Any]] = client.fetch_all("order_hdr", params=params)
-        flattened = [_flatten_order_hdr_record(x) for x in items]
-        return upsert_order_hdr(conn, flattened)
+        logger.info("Fetching order_hdr records (today)...")
+        items: List[Dict[str, Any]] = client.fetch_all_sync("order_hdr", params=params)
+        if not items:
+            raise ValueError("No records found for today")
     except Exception as e:
-        print(f"Error fetching order_hdr data: {e}")
-        # Try with a broader date range (last 3 days) if today's data is not available
-        from datetime import datetime, timedelta
-
-        print("Trying with last 3 days date range...")
+        logger.warning(
+            "Failed to fetch today's order_hdr (%s). Trying last 3 days...", e
+        )
         end_date = datetime.now()
         start_date = end_date - timedelta(days=3)
-
         params = {
             "create_ts__gte": start_date.strftime("%Y-%m-%dT%H:%M:%S"),
             "create_ts__lt": end_date.strftime("%Y-%m-%dT%H:%M:%S"),
         }
+        items: List[Dict[str, Any]] = client.fetch_all_sync("order_hdr", params=params)
 
-        items: List[Dict[str, Any]] = client.fetch_all("order_hdr", params=params)
-        flattened = [_flatten_order_hdr_record(x) for x in items]
-        return upsert_order_hdr(conn, flattened)
+    logger.info("Fetched %d order_hdr records", len(items))
+    if not items:
+        logger.info("No order_hdr data found to upsert")
+        return 0
+
+    flattened = [_flatten_order_hdr_record(rec) for rec in items]
+
+    total = 0
+    for chunk in batched(flattened, 500):
+        total += upsert_order_hdr(conn, chunk)
+
+    logger.info("Upserted %d order_hdr rows", total)
+    return total

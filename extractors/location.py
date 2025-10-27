@@ -1,15 +1,60 @@
+# location.py
+from __future__ import annotations
 from typing import Any, Dict, List
+from datetime import datetime
+import logging
 
 from wms_client import WMSClient
-from utils import flatten_one_level
+from utils import flatten_one_level, batched
 from db import upsert_location
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_float(v: Any) -> float | None:
+    if v in (None, "", "null"):
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(v: Any) -> int | None:
+    if v in (None, "", "null"):
+        return None
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_bool(v: Any) -> bool | None:
+    if v is None:
+        return None
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):
+        return v.lower() in ("true", "t", "1", "yes", "y")
+    return bool(v)
+
+
+def _parse_datetime(s: Any) -> datetime | None:
+    if not s:
+        return None
+    try:
+        if isinstance(s, str):
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
+    return None
 
 
 def _flatten_location_record(location: Dict[str, Any]) -> Dict[str, Any]:
     flat = flatten_one_level(location)
 
-    # Convert numeric fields
-    for num_field in [
+    # Float fields
+    for f in [
         "length",
         "width",
         "height",
@@ -25,14 +70,11 @@ def _flatten_location_record(location: Dict[str, Any]) -> Dict[str, Any]:
         "z_coordinate",
         "in_transit_units",
     ]:
-        if flat.get(num_field) is not None and flat.get(num_field) != "":
-            try:
-                flat[num_field] = float(flat[num_field])
-            except (TypeError, ValueError):
-                flat[num_field] = None
+        if f in flat:
+            flat[f] = _safe_float(flat.get(f))
 
-    # Convert integer fields
-    for int_field in [
+    # Integer fields
+    for f in [
         "id",
         "facility_id_id",
         "dedicated_company_id_id",
@@ -46,14 +88,11 @@ def _flatten_location_record(location: Dict[str, Any]) -> Dict[str, Any]:
         "task_zone_id",
         "cc_threshold_uom_id_id",
     ]:
-        if flat.get(int_field):
-            try:
-                flat[int_field] = int(flat[int_field])
-            except (TypeError, ValueError):
-                flat[int_field] = None
+        if f in flat:
+            flat[f] = _safe_int(flat.get(f))
 
-    # Convert boolean fields
-    for bool_field in [
+    # Boolean fields
+    for f in [
         "allow_multi_sku",
         "to_be_counted_flg",
         "lock_for_putaway_flg",
@@ -62,60 +101,69 @@ def _flatten_location_record(location: Dict[str, Any]) -> Dict[str, Any]:
         "restrict_invn_attr_flg",
         "assembly_flg",
     ]:
-        if flat.get(bool_field) is not None:
-            flat[bool_field] = bool(flat[bool_field])
+        if f in flat:
+            flat[f] = _safe_bool(flat.get(f))
 
-    # Convert timestamp fields
-    for ts_field in [
+    # Timestamp fields
+    for f in [
         "create_ts",
         "mod_ts",
         "to_be_counted_ts",
         "last_count_ts",
         "lock_applied_ts",
     ]:
-        if flat.get(ts_field):
-            try:
-                from datetime import datetime
+        if f in flat:
+            flat[f] = _parse_datetime(flat.get(f))
 
-                if isinstance(flat[ts_field], str):
-                    flat[ts_field] = datetime.fromisoformat(
-                        flat[ts_field].replace("Z", "+00:00")
-                    )
-            except (ValueError, TypeError):
-                flat[ts_field] = None
+    # Nested dicts (id/key/url)
+    nested_fields = [
+        "facility_id",
+        "dedicated_company_id",
+        "type_id",
+        "destination_company_id",
+        "replenishment_zone_id",
+        "item_assignment_type_id",
+        "item_id",
+        "cc_threshold_uom_id",
+    ]
+    for nf in nested_fields:
+        if nf in flat and isinstance(flat[nf], dict):
+            flat[f"{nf}_key"] = flat[nf].get("key")
+            flat[f"{nf}_url"] = flat[nf].get("url")
+            flat.pop(nf, None)
 
     return flat
 
 
 def extract_and_upsert_location(client: WMSClient, conn) -> int:
-    """Extract current month's location data and upsert to database"""
-    # Get current month
-    from datetime import datetime
-
+    """
+    Extract location data for the current month, flatten, and upsert into DB.
+    If no records are found, tries previous month.
+    """
     current_month = datetime.now().month
-
-    params = {
-        "create_ts__month": current_month,
-    }
+    params = {"create_ts__month": current_month}
 
     try:
-        items: List[Dict[str, Any]] = client.fetch_all("location", params=params)
-        flattened = [_flatten_location_record(x) for x in items]
-        return upsert_location(conn, flattened)
+        logger.info("Fetching location data for current month (%d)...", current_month)
+        items: List[Dict[str, Any]] = client.fetch_all_sync("location", params=params)
+        if not items:
+            raise ValueError("No data found for current month")
     except Exception as e:
-        print(f"Error fetching location data: {e}")
-        # Try with previous month if current month's data is not available
-        from datetime import datetime
+        logger.warning("Failed to fetch current month: %s", e)
+        prev_month = current_month - 1 or 12
+        params = {"create_ts__month": prev_month}
+        logger.info("Retrying with previous month (%d)...", prev_month)
+        items: List[Dict[str, Any]] = client.fetch_all_sync("location", params=params)
 
-        print("Trying with previous month...")
-        previous_month = datetime.now().month - 1
-        if previous_month == 0:
-            previous_month = 12
+    logger.info("Fetched %d location records", len(items))
+    if not items:
+        logger.info("No location data to upsert")
+        return 0
 
-        params = {
-            "create_ts__month": previous_month,
-        }
+    flattened = [_flatten_location_record(rec) for rec in items]
+    total = 0
+    for chunk in batched(flattened, 500):
+        total += upsert_location(conn, chunk)
 
-        items: List[Dict[str, Any]] = client.fetch_all("location", params=params)
-        flattened = [_flatten_location_record(x) for x in items]
-        return upsert_location(conn, flattened)
+    logger.info("Upserted %d location rows", total)
+    return total

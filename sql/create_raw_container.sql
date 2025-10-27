@@ -27,11 +27,12 @@ create table if not exists public.raw_container (
     type                text,
     status_id           integer,
     vas_status_id       integer,
-    curr_location_id    bigint,
     curr_location_id_id bigint,
     curr_location_id_key text,
     curr_location_id_url text,
-    prev_location_id    bigint,
+    prev_location_id_id bigint,
+    prev_location_id_key text,
+    prev_location_id_url text,
     priority_date       timestamp with time zone,
     pallet_id           bigint,
 
@@ -110,6 +111,7 @@ create table if not exists public.raw_inventory (
     item_id_key         text,
     item_id_url         text,
 
+    -- location id (scalar)
     location_id         bigint,
 
     -- nested: container_id
@@ -117,13 +119,13 @@ create table if not exists public.raw_inventory (
     container_id_key    text,
     container_id_url    text,
 
+    -- inventory attributes
     priority_date       date,
     curr_qty            numeric,
     orig_qty            numeric,
     pack_qty            numeric,
     case_qty            numeric,
     status_id           integer,
-
     manufacture_date    date,
     expiry_date         date,
     batch_number_id     bigint,
@@ -138,7 +140,15 @@ create table if not exists public.raw_inventory (
     -- nested: uom_id
     uom_id_id           bigint,
     uom_id_key          text,
-    uom_id_url          text
+    uom_id_url          text,
+
+    -- nested: location_id
+    location_id_id      bigint,
+    location_id_key     text,
+    location_id_url     text,
+
+    -- container id (scalar)
+    container_id        bigint
 );
 
 -- Container Status table
