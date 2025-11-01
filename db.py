@@ -128,3 +128,7 @@ def upsert_location(conn, rows, chunk_size: int = 500) -> int:
     return upsert_table(
         conn, "public.raw_location", rows, chunk_size=chunk_size, pk="id"
     )
+
+
+def upsert_oblpn(conn, rows, chunk_size: int = 500) -> int:
+    return upsert_table(conn, "public.raw_oblpn", rows, chunk_size=chunk_size, pk="id")

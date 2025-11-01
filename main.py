@@ -10,6 +10,7 @@ from extractors.order_hdr import extract_and_upsert_order_hdr
 from extractors.order_dtl import extract_and_upsert_order_dtl
 from extractors.container import extract_and_upsert_container
 from extractors.location import extract_and_upsert_location
+from extractors.oblpn import extract_and_upsert_oblpn
 
 # se você tiver outros extractors, importe aqui (ordem e nome iguais ao seu projeto original)
 # from extractors.container import extract_and_upsert_container
@@ -49,6 +50,10 @@ def main() -> None:
             logger.info("Extracting location data...")
             loc_count = extract_and_upsert_location(client, conn)
             logger.info("Location processed: %d", loc_count)
+
+            logger.info("Extracting oblpn data...")
+            loc_count = extract_and_upsert_oblpn(client, conn)
+            logger.info("Oblpn processed: %d", loc_count)
 
             # outros extractors (exemplo)
             # logger.info("Extracting container data...")

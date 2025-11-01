@@ -560,3 +560,86 @@ create table if not exists public.raw_location (
     ignore_attr_values_for_restrict_invn_attr text,
     ranking             text
 );
+
+-- OBLPN table
+CREATE TABLE IF NOT EXISTS raw_oblpn (
+    id BIGINT PRIMARY KEY,
+    url TEXT,
+    create_user TEXT,
+    create_ts TIMESTAMPTZ,
+    mod_user TEXT,
+    mod_ts TIMESTAMPTZ,
+
+    facility_id_id BIGINT,
+    facility_id_key TEXT,
+    facility_id_url TEXT,
+
+    company_id_id BIGINT,
+    company_id_key TEXT,
+    company_id_url TEXT,
+
+    curr_location_id_id BIGINT,
+    curr_location_id_key TEXT,
+    curr_location_id_url TEXT,
+
+    prev_location_id_id BIGINT,
+    prev_location_id_key TEXT,
+    prev_location_id_url TEXT,
+
+    container_nbr TEXT,
+    type TEXT,
+    status_id INTEGER,
+    vas_status_id INTEGER,
+
+    priority_date TIMESTAMPTZ,
+    pallet_id BIGINT,
+    rcvd_shipment_id BIGINT,
+    rcvd_ts TIMESTAMPTZ,
+    rcvd_user TEXT,
+
+    weight NUMERIC,
+    volume NUMERIC,
+
+    pick_user TEXT,
+    pack_user TEXT,
+    putawaytype_id BIGINT,
+
+    ref_iblpn_nbr TEXT,
+    ref_shipment_nbr TEXT,
+    ref_po_nbr TEXT,
+    ref_oblpn_nbr TEXT,
+
+    first_putaway_ts TIMESTAMPTZ,
+
+    parcel_batch_flg BOOLEAN,
+    lpn_type_id INTEGER,
+    cart_posn_nbr INTEGER,
+    audit_status_id INTEGER,
+    qc_status_id INTEGER,
+
+    asset_id BIGINT,
+    asset_seal_nbr TEXT,
+    price_labels_printed BOOLEAN,
+    comments TEXT,
+    actual_weight_flg BOOLEAN,
+
+    length NUMERIC,
+    width NUMERIC,
+    height NUMERIC,
+
+    rcvd_trailer_nbr TEXT,
+    orig_container_nbr TEXT,
+    pallet_position TEXT,
+    inventory_lock_set TEXT,
+    nbr_files INTEGER,
+
+    cust_field_1 TEXT,
+    cust_field_2 TEXT,
+    cust_field_3 TEXT,
+    cust_field_4 TEXT,
+    cust_field_5 TEXT,
+
+    cart_nbr TEXT,
+
+    inserted_at TIMESTAMPTZ DEFAULT NOW()
+);
