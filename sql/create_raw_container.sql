@@ -640,6 +640,6 @@ CREATE TABLE IF NOT EXISTS raw_oblpn (
     cust_field_5 TEXT,
 
     cart_nbr TEXT,
-
-    inserted_at TIMESTAMPTZ DEFAULT NOW()
+    lpn_type_id_id BIGINT,
+    prev_location_id TEXT
 );
